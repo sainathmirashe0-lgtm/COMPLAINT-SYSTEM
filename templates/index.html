@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+<div class="container">
+  <h2>Submit a Complaint</h2>
+
+  <form method="POST">
+    <div class="field">
+      <label>Category</label>
+      <input type="text" name="category" placeholder="e.g. Electricity, Water" required>
+    </div>
+
+    <div class="field">
+      <label>Description</label>
+      <textarea name="description" placeholder="Describe your problem..." required></textarea>
+    </div>
+
+    <button type="submit">Submit Complaint</button>
+  </form>
+</div>
+
+{% endblock %}

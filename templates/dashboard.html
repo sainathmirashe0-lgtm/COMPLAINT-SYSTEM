@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2 class="logo">Dashboard</h2>
+
+    <ul>
+      <li class="active">🏠 Overview</li>
+      <li>📊 Statistics</li>
+
+      <li><a href="{{ url_for('index') }}">🧾 Complaint</a></li>
+
+      
+        <li><a href="{{ url_for('login') }}">🔐 Login</a></li>
+        <li><a href="{{ url_for('register') }}">📝 Register</a></li>
+      
+        <li><a href="{{ url_for('logout') }}">🚪 Logout</a></li>
+      
+    </ul>
+  </aside>
+
+  <!-- Main -->
+  <main>
+
+    <header>
+      <input type="text" placeholder="Search..." />
+
+      <div class="profile">
+        <img src="{{ url_for('static', filename='user.png') }}" alt="User">
+        <span>{{ session.get('user_role', 'User') }}</span>
+      </div>
+    </header>
+
+    <!-- Cards -->
+    <section class="cards">
+      <div class="card">
+        Total Complaints<br>
+        <span>{{ complaints|length }}</span>
+      </div>
+
+      <div class="card green">
+        Approved<br>
+        <span>
+          {{ complaints | selectattr("status", "equalto", "Approved") | list | length }}
+        </span>
+      </div>
+
+      <div class="card blue">
+        Users<br>
+        <span>1</span>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="content">
+      <div class="box">
+        <h3>Monthly Complaints</h3>
+        <canvas id="barChart"></canvas>
+      </div>
+
+      <div class="box">
+        <h3>Status</h3>
+        <canvas id="pieChart"></canvas>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+{% endblock %}
