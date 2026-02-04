@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+<div class="container-fluid">
+  
+  <!-- ================= HEADER BAR ================= -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>Complaint Dashboard</h3>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary btn-sm" onclick="showOverview()">Overview</button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="showComplaints()">My Complaints</button>
+     
+      {% if is_admin %}
+      <button class="btn btn-outline-warning btn-sm" onclick="showWithdrawals()">Withdrawals</button>
+      {% endif %}
+      <a href="{{ url_for('solution') }}" class="btn btn-outline-success btn-sm">
+        Give Solution
+      </a>
+      {% if is_user %}
+       <button class="btn btn-outline-secondary btn-sm" onclick="showSubmitComplaint()">Submit Complaint</button>
+      {% endif %}
+       <a href="{{ url_for('index') }}" class="btn btn-outline-success btn-sm">
+        add_complaints
+      </a>
+      <a href="{{ url_for('all_solutions') }}" class="btn btn-outline-success btn-sm">
+        View solutions
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= SUMMARY CARDS ================= -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card p-3 shadow-sm">
+        <h6>Total Complaints</h6>
+        <h2>{{ complaints|length }}</h2>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card p-3 shadow-sm bg-success text-white">
+        <h6>Approved</h6>
+        <h2>{{ complaints | selectattr("status","equalto","Approved") | list | length }}</h2>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card p-3 shadow-sm bg-warning">
+        <h6>Pending</h6>
+        <h2>{{ complaints | selectattr("status","equalto","Pending") | list | length }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= OVERVIEW ================= -->
+  <div id="overviewSection">
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card p-3 shadow-sm">
+          <h5>Monthly Complaints</h5>
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card p-3 shadow-sm">
+          <h5>Status Distribution</h5>
+          <div class="chart-box">
+           <canvas id="pieChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MY COMPLAINTS ================= -->
+  <div id="complaintsSection" class="d-none mt-5">
+    <h4>My Complaints</h4>
+
+    {% if complaints %}
+    <div class="table-responsive mt-3">
+      <table class="table table-bordered table-striped align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Photo</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Work Proof</th>
+            <th>Rating</th>
+            <th>Feedback</th>
+            <th>Date</th>
+            {% if is_admin %}<th>Action</th>{% endif %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for c in complaints %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ c.category }}</td>
+            <td>{{ c.description }}</td>
+
+            <td>
+              {% if c.image %}
+                <img src="{{ url_for('static', filename=c.image) }}"
+                     width="50" onclick="window.open(this.src)">
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <td>
+              {% if c.status == "Pending" %}
+                <span class="badge bg-warning">Pending</span>
+              {% elif c.status == "In Progress" %}
+                <span class="badge bg-info">In Progress</span>
+              {% elif c.status == "Completed" %}
+                <span class="badge bg-primary">Completed</span>
+              {% elif c.status == "Approved" %}
+                <span class="badge bg-success">Approved</span>
+              {% endif %}
+            </td>
+
+            <td>{{ c.assigned_to or "Not Assigned" }}</td>
+
+            <td>
+              {% if c.work_image %}
+                <img src="{{ url_for('static', filename=c.work_image) }}"
+                     width="50" onclick="window.open(this.src)">
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <td>{{ c.rating or "—" }}</td>
+            <td>{{ c.feedback or "—" }}</td>
+            <td>{{ c.created_at.strftime("%d-%m-%Y") }}</td>
+
+            {% if is_admin %}
+            <td>
+              {% if c.status == "Pending" %}
+                <a href="{{ url_for('assign_worker', id=c.id) }}"
+                   class="btn btn-sm btn-primary mb-1">Assign</a>
+
+                
+              {% elif c.status == "Completed" %}
+                <form method="POST" action="{{ url_for('admin_complete') }}">
+                  <input type="hidden" name="id" value="{{ c.id }}">
+                  <button class="btn btn-sm btn-success">Approve</button>
+                </form>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+
+          <!-- USER FEEDBACK -->
+          {% if c.status == "Approved"
+                and not c.rating
+                and c.user_id == session.get("user_id") %}
+          <tr>
+            <td colspan="11">
+              <form method="POST"
+                    action="{{ url_for('submit_feedback', id=c.id) }}"
+                    class="d-flex gap-2">
+                <select name="rating" class="form-select w-auto" required>
+                  <option value="5">⭐⭐⭐⭐⭐</option>
+                  <option value="4">⭐⭐⭐⭐</option>
+                  <option value="3">⭐⭐⭐</option>
+                  <option value="2">⭐⭐</option>
+                  <option value="1">⭐</option>
+                </select>
+
+                <input name="feedback"
+                       class="form-control"
+                       placeholder="Your feedback"
+                       required>
+
+                <button class="btn btn-success">Submit</button>
+              </form>
+            </td>
+          </tr>
+          {% endif %}
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-muted">No complaints found.</p>
+    {% endif %}
+  </div>
+
+  <!-- ================= WITHDRAW REQUESTS (ADMIN) ================= -->
+  {% if is_admin %}
+  <div id="withdrawSection" class="d-none mt-5">
+    <h4>💰 Worker Withdrawal Requests</h4>
+
+    {% if withdrawals %}
+    <div class="table-responsive mt-3">
+      <table class="table table-bordered table-striped align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Worker</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for w in withdrawals %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ w.worker_id }}</td>
+            <td>₹ {{ w.amount }}</td>
+            <td>{{ w.status }}</td>
+            <td>
+              {% if w.status == "Pending" %}
+              <form method="POST"
+                    action="{{ url_for('approve_withdraw', id=w.id) }}"
+                    style="display:inline;">
+                <button class="btn btn-sm btn-success">Approve</button>
+              </form>
+
+              <form method="POST"
+                    action="{{ url_for('reject_withdraw', id=w.id) }}"
+                    style="display:inline;">
+                <button class="btn btn-sm btn-danger">Reject</button>
+              </form>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-muted">No withdrawal requests.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ================= PAGE JS ONLY ================= -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+<script>
+function hideAll() {
+  document.getElementById("overviewSection").classList.add("d-none");
+  document.getElementById("complaintsSection").classList.add("d-none");
+  const w = document.getElementById("withdrawSection");
+  if (w) w.classList.add("d-none");
+}
+
+function showOverview() {
+  hideAll();
+  document.getElementById("overviewSection").classList.remove("d-none");
+}
+
+function showComplaints() {
+  hideAll();
+  document.getElementById("complaintsSection").classList.remove("d-none");
+}
+
+function showWithdrawals() {
+  hideAll();
+  document.getElementById("withdrawSection").classList.remove("d-none");
+}
+</script>
+
+{% endblock %}  

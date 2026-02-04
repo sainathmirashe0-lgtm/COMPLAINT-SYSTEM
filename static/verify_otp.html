@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Verify OTP</h3>
+
+<div class="alert alert-info">
+  OTP expires in <span id="timer">05:00</span>
+</div>
+
+<form method="POST">
+  <input name="otp" class="form-control mb-2" placeholder="Enter OTP" required>
+  <button class="btn btn-success">Verify</button>
+</form>
+
+<hr>
+
+<form method="POST" action="{{ url_for('resend_otp') }}">
+  <button id="resendBtn" class="btn btn-warning" disabled>🔁 Resend OTP</button>
+</form>
+
+<script>
+let time = 300;
+let timer = document.getElementById("timer");
+let resendBtn = document.getElementById("resendBtn");
+
+setInterval(() => {
+  let min = Math.floor(time / 60);
+  let sec = time % 60;
+  timer.innerHTML = `${min}:${sec < 10 ? '0'+sec : sec}`;
+  time--;
+
+  if (time < 0) {
+    resendBtn.disabled = false;
+    timer.innerHTML = "Expired";
+  }
+}, 1000);
+</script>
+
+{% endblock %}

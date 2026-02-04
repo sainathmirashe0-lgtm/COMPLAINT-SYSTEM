@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/worker_dashboard.css') }}">
+
+<h2 class="page-title">Worker Dashboard</h2>
+
+{% if complaints %}
+<table class="work-table">
+  <thead>
+    <tr>
+      <th>No</th>
+      <th>Category</th>
+      <th>Description</th>
+      <th>Status</th>
+      <th>Upload Work</th>
+      <th>Salary</th>
+      <th>Withdraw</th>
+      <th>History</th>
+    </tr>
+  </thead>
+
+  <tbody>
+  {% for c in complaints %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ c.category }}</td>
+      <td>{{ c.description }}</td>
+      <td>
+        {% if c.status == "Completed" %}
+          <span class="badge completed">Completed</span>
+        {% else %}
+          <span class="badge pending">Pending</span>
+        {% endif %}
+      </td>
+
+      <!-- UPLOAD WORK -->
+      <td>
+        {% if c.status != "Completed" %}
+        <form method="POST"
+              action="{{ url_for('worker_upload', id=c.id) }}"
+              enctype="multipart/form-data">
+
+          <input type="file" name="work_image" required>
+          <button type="submit" class="btn-submit">
+            ✅ Submit
+          </button>
+        </form>
+        {% else %}
+          ✔ Done
+        {% endif %}
+      </td>
+
+      <!-- SALARY -->
+      <td>
+        <a href="{{ url_for('worker_salary') }}" class="btn-salary">
+          View
+        </a>
+      </td>
+
+      <!-- WITHDRAW -->
+      <td>
+        <a href="{{ url_for('withdraw') }}" class="btn-withdraw">
+          💸 Withdraw
+        </a>
+      </td>
+
+      <!-- HISTORY -->
+      <td>
+        <a href="{{ url_for('withdraw_history') }}" class="btn-history">
+          📜 History
+        </a>
+      </td>
+
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No work assigned.</p>
+{% endif %}
+
+{% endblock %}
+
